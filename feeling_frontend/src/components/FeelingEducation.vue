@@ -8,6 +8,13 @@ export default {
 		return{
 
 		}
+	},
+	created() {
+		/*this.axios
+			.get('')
+			.then(res=>{
+				console.log(res)
+			})*/
 	}
 }
 </script>
