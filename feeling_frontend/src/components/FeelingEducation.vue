@@ -1,5 +1,5 @@
 <template lang="pug">
-	h1 страница обучения
+	h1 страница обучения!
 </template>
 
 <script>
