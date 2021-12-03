@@ -3,8 +3,9 @@
 		.headerBlock(@click="$_feeling_index_getVideo('61a9b3dc047e1f522c17f570')")
 			img(src="../assets/logo.svg")
 			h1 Сервис для конвертирования видео в текст.
-		.blockHistory
+		.blockHistory(:class="{'back':!openUpload}")
 			.greyButtonBlock(@click="openUpload=false" v-if="openUpload&&arrayFiles.length") История загрузок
+			.greyButtonBlock(@click="openUpload=true" v-if="!openUpload") Назад
 		transition(mode="out-in" name="opacity")
 			.blockUpload(v-if="openUpload" key="1")
 				label(for="uploadFile")
@@ -19,45 +20,81 @@
 				h2 Список обработанных файлов:
 				.mainBlockFiles
 					.blockFileUploaded(v-for="file in arrayFiles")
-						.greyBlockTitle {{file.names}}
+						.greyBlockTitle
+							span {{file.names}}
 							img(src="../assets/check.svg" v-if="file.ready")
 							.blockSpiner(v-else)
 								b-spinner
 						.greyBlockBody
-							.title Распознаный текст
-							.greyButtonBlock(@click="$_feeling_index_look(file)" v-if="file.text") Просмотреть
-							.greyButtonBlock(@click="$_feeling_index_exportJson(file)") Выгрузить json
-							.dateBlock(v-if="file.ready") Дата преобразования: {{new Date(file.dateCreate).toLocaleDateString()+' в '+new Date(file.dateCreate).toLocaleTimeString()}}
+							.title(v-if="file.text!==null") Распознаный текст
+							.greyButtonBlock(@click="$_feeling_index_look(file)" v-if="file.text!==null") Просмотреть
+							.greyButtonBlock(@click="$_feeling_index_exportJson(file,0)" v-if="file.text!==null") Выгрузить json
+							span(v-if="file.ready")
+								.dateBlock Дата преобразования: {{new Date(file.dateCreate).toLocaleDateString()+' в '+new Date(file.dateCreate).toLocaleTimeString()}}
+								.dateBlock
+									span(v-if="file.time") Время преобразования: {{file.time}} секунд
 							.dateBlock(v-if="file.audio===0") Идет считывание аудио дорожки...
 							.dateBlock(v-if="!file.ready&&file.audio===1") Идет преобразование аудио в текст...
 				.blockDoMore
 					.greyButtonBlock(@click="openUpload=true")
 						span Загрузить еще
 						img(src="../assets/triangle.svg")
-		b-modal(ref="openFileModal" :title="selectedFile.name" size="lg" hide-footer)
-			.textFile {{selectedFile.text}}
+		transition(name="modalWatch" mode="out-in")
+			.myModalBlock(v-if="openModal")
+				.backGroundBlock(@click="openModal=false")
+				.myModal
+					.titleModal {{selectedFile.name}}
+						.closeModal(@click="openModal=false")
+							b-icon(icon="x")
+						.infoFile Дата преобразования: {{new Date(selectedFile.dateCreate).toLocaleDateString()+' в '+new Date(selectedFile.dateCreate).toLocaleTimeString()}}
+						.infoFile Время преобразования: {{selectedFile.time}} секунд
+					.blockTabs
+						b-tabs(v-model="tabActive")
+							b-tab(title="Распознаный текст")
+								.bodyModal
+									.contentBody
+										p {{selectedFile.text}}
+							b-tab(title="Очищенный текст")
+								.bodyModal
+									.contentBody
+										p asdjaslkdjlkasjdklasjkdjaskdjlasjdlkasjdlaksjdlkasjdlkasjdjaslkdjaskdalskdjaklsd
+							b-tab(title="Текст с временными рамками")
+								.bodyModal
+									.contentBody
+										p asdjaslkdjlkasjdklasjkdjaskdjlasjdlkasjdlaksjdlkasjdlkasjdjaslkdjaskdalskdjaklsd
+							b-tab(title="Спикеры")
+								.bodyModal
+									.contentBody
+										.row
+											.col-6.speekerBlock(v-for="item in 10")
+												.col-12.row
+													.col-6
+														.blockImg
+															img(src="https://alna.ru/thumbs/650/up/immovables_img/248933/1638462011218.jpg")
+													.col-6
+														.name Имя спикера
+					.footerModal
+						.greyButtonBlock(@click="$_feeling_index_exportJson(selectedFile,1,tabActive)") Выгрузить json
 </template>
 
 <script>
 export default {
 	data(){
 		return{
+			tabActive:0,
+			openModal:false,
 			files:[],
 			progress:0,
 			arrayFiles:[],
-			selectedFile:{
-				name:'',
-				text:''
-			},
+			selectedFile:{},
 			arrInterval:[],
 			openUpload:true
 		}
 	},
 	methods:{
 		$_feeling_index_look(file){
-			this.selectedFile.name=file.name
-			this.selectedFile.text=file.text
-			this.$refs.openFileModal.show();
+			this.selectedFile=file
+			this.openModal=true
 		},
 		$_feeling_index_upload(file){
 			let config = {
@@ -68,6 +105,10 @@ export default {
 					})
 				}
 			};
+			//в старом видео нет просмотреть текста
+			//прогресс бар грузит 100% раньше чем прошла загрузка
+			//добавить ограничеие на фронт по загрузке видео
+			//расписать READ.me
 			if(this.files.length){
 				let data = new FormData();
 				file.forEach(file=>{
@@ -93,7 +134,7 @@ export default {
 							dateReady:res.data.data.dateReady,
 							ready:res.data.data.ready,
 							id:res.data.data._id,
-							text:'',
+							text:null,
 							audio:0
 						})
 						this.$_feeling_index_check(res.data.data.array_name[index])
@@ -118,19 +159,32 @@ export default {
 					localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
 					if(file.ready){
 						file.text=res.data.data.text
+						file.time=res.data.data.time/1000
 						return true
 					}
 				}
 			}
 			return false
 		},
-		$_feeling_index_exportJson(file){
-			const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(
-				{
+		$_feeling_index_exportJson(file,type,tabActive){
+			let myJson={}
+			if(!type){
+				myJson={
 					name:file.names,
 					text:file.text
 				}
-			));
+			}else{
+				switch (tabActive){
+					case 0:{
+						myJson={
+							name:file.names,
+							text:file.text
+						}
+						break
+					}
+				}
+			}
+			const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myJson));
 			const downloadAnchorNode = document.createElement('a');
 			downloadAnchorNode.setAttribute("href",dataStr);
 			downloadAnchorNode.setAttribute("download", 'test' + ".json");
@@ -139,14 +193,14 @@ export default {
 			downloadAnchorNode.remove();
 		}
 	},
-	created() {
+	async created() {
 		if(localStorage.getItem('savedArrFiles')){
-			this.arrayFiles=JSON.parse(localStorage.getItem('savedArrFiles'))
-			this.arrayFiles.forEach(item=>{
-				if(!item.ready){
-					this.$_feeling_index_check(item.name)
+			this.arrayFiles=await JSON.parse(localStorage.getItem('savedArrFiles'))
+			for(let item of this.arrayFiles){
+				if(!item.ready||item.text===null){
+					await this.$_feeling_index_check(item.name)
 				}
-			})
+			}
 		}
 	},
 	watch:{
@@ -191,6 +245,9 @@ export default {
 		place-content: flex-end;
 		height: 60px;
 	}
+	.back{
+		place-content: flex-start;
+	}
 	.blockDoMore{
 		width: 80%;
 		margin: 30px auto 30px auto;
@@ -211,9 +268,6 @@ export default {
 	.greyButtonBlock img{
 		height: 20px;
 		margin: 22px 0 0 8px;
-	}
-	.blockFinishedFiles{
-		margin-top: 30px;
 	}
 	.blockFinishedFiles h2{
 		font-size: 24px;
@@ -239,19 +293,27 @@ export default {
 		padding: 5px 0;
 		font-size: 18px;
 		position: relative;
+		height: 100px;
 	}
 	.greyBlockTitle img{
 		margin-bottom: 10px;
 		position: absolute;
 		top: -7px;
-		right: 0;
+		right: -8px;
+	}
+	.greBlockTitle span{
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
 	}
 	.greyBlockBody{
-		margin-top: 15px;
+		margin: 15px 0;
 		background: #C4C4C4;
 		border-radius: 10px;
 		display: grid;
 		place-content: center;
+		padding: 15px 0;
 	}
 	.title{
 		font-size: 15px;
@@ -285,6 +347,7 @@ export default {
 	}
 	.dateBlock{
 		width: 200px;
+		height: 50px;
 	}
 	.additionalSpiner{
 		position: absolute;
@@ -295,5 +358,103 @@ export default {
 	}
 	.additionalSpiner .spinner-border{
 		margin: 0 auto;
+	}
+	.backGroundBlock{
+		width: 100%;
+		position: fixed;
+		z-index: -1;
+		background: #00000059;
+		height: 100vh;
+		top: 0;
+	}
+	.myModalBlock{
+		width: 100%;
+		position: fixed;
+		text-align: center;
+		min-width: 100%;
+		display: grid;
+		place-items: center;
+		z-index: 1;
+		height: 100vh;
+		touch-action: none;
+		top: 0;
+	}
+	.myModalBlock .myModal{
+		background: white;
+		border-radius: 5px;
+		padding: 15px 15px 75px 15px;
+		height: 675px;
+		width: 1000px;
+		position: relative;
+	}
+	.modalWatch-enter-active {
+		animation: surfacingBlock .5s ease;
+	}
+	.modalWatch-leave-active {
+		animation: surfacingBlock .3s ease reverse;
+	}
+	@keyframes surfacingBlock {
+		0% {
+			top: -100%;
+			opacity: 0;
+		}
+		100% {
+			top:0;
+			opacity: 1;
+		}
+	}
+	.titleModal{
+		font-size: 24px;
+		margin-bottom: 15px;
+	}
+	.closeModal{
+		position: absolute;
+		font-size: 60px;
+		right: 15px;
+		top: -15px;
+		cursor: pointer;
+	}
+	.bodyModal{
+		text-align: left;
+		overflow: hidden;
+		height: 410px;
+	}
+	.contentBody{
+		height: 100%;
+		overflow-y: scroll;
+		overflow-x: hidden;
+	}
+	.footerModal{
+		position: absolute;
+		bottom: 15px;
+		width: 100%;
+		display: flex;
+		place-content: center;
+	}
+	.footerModal .greyButtonBlock:first-child{
+		margin-right: 7.5px;
+	}
+	.footerModal .greyButtonBlock:last-child{
+		margin-l: 7.5px;
+	}
+	.speekerBlock img{
+		height: 100%;
+	}
+	.speekerBlock{
+		display: flex;
+		height: 120px;
+		margin-bottom: 20px;
+		position: relative;
+	}
+	.blockImg{
+		height: 120px;
+	}
+	.contentBody::-webkit-scrollbar, .contentBody::-webkit-scrollbar, .contentBody::-webkit-scrollbar {height: 5px;background-color: white;}
+	.contentBody::-webkit-scrollbar-thumb, .contentBody::-webkit-scrollbar-thumb, .contentBody::-webkit-scrollbar-thumb{background: #C4C4C4; border-radius: 5px;}
+	.contentBody::-webkit-scrollbar-thumb:hover, .contentBody::-webkit-scrollbar-thumb:hover, .contentBody::-webkit-scrollbar-thumb:hover{background: #C4C4C4;}
+	.contentBody::-webkit-scrollbar-thumb:focus, .contentBody::-webkit-scrollbar-thumb:focus, .contentBody::-webkit-scrollbar-thumb:focus{background: #C4C4C4;}
+	.infoFile{
+		font-size: 16px;
+		text-align: left;
 	}
 </style>
