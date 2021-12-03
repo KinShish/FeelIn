@@ -1,0 +1,30 @@
+{
+	"modules": {
+
+	},
+	"server": {
+		"host": "192.168.1.73",
+		"port": 3000,
+		"plugins": ["swagger","mongodb"]
+	},
+	"mongodb": {
+		"url": "mongodb://dbadmin:kinshish321@192.168.0.209:27017",
+		"settings": {
+			"maxPoolSize": 50
+		},
+		"decorate": true
+	},
+	"swagger": {
+		"info": {
+			"title": "Shelob",
+			"version": "0.0.1"
+		},
+		"tags":[
+			{
+				"name":"api",
+				"description":"Все команды"
+			}
+		]
+	}
+}
+
