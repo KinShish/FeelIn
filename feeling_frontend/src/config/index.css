@@ -1,0 +1,22 @@
+/*Табы*/
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    color: white;
+    background-color: #017D89;
+    border-color: #017D89;
+    border-radius: 10px;
+}
+.nav-tabs .nav-link {
+    color: #017D89;
+    background-color: #fff;
+    border-color: #017D89;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bolder;;
+}
+.nav-tabs{
+    border: none;
+    margin-bottom: 15px;
+}
+.nav-tabs .nav-link{
+    margin: 0 15px;
+}

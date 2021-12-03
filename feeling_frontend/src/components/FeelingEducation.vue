@@ -7,7 +7,6 @@
 				img(src="https://alna.ru/thumbs/650/up/immovables_img/248933/1638462011218.jpg")
 			.buttonsBlock.col-5
 				b-input-group
-					//b-form-input(aria-describedby="basic-addon1")
 					multiselect(v-model="valueSelect"
 						:options="optionsSelect"
 						:searchable="true"
