@@ -204,6 +204,7 @@ export default {
 	.headerBlock{
 		text-align: center;
 		margin-bottom: 100px;
+		margin-top: 15px;
 	}
 	.headerBlock h1{
 		font-size: 16px;
