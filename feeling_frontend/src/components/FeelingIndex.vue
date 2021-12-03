@@ -1,6 +1,6 @@
 <template lang="pug">
 	div
-		.headerBlock(@click="$_feeling_index_getVideo('61a9b3dc047e1f522c17f570')")
+		.headerBlock
 			img(src="../assets/logo.svg")
 			h1 Сервис для конвертирования видео в текст.
 		.blockHistory(:class="{'back':!openUpload}")
@@ -96,7 +96,7 @@ export default {
 			this.selectedFile=file
 			this.openModal=true
 		},
-		$_feeling_index_upload(file){
+		async $_feeling_index_upload(file){
 			let config = {
 				onUploadProgress: (progressEvent)=> {
 					let count = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
@@ -105,43 +105,32 @@ export default {
 					})
 				}
 			};
-			//в старом видео нет просмотреть текста
-			//прогресс бар грузит 100% раньше чем прошла загрузка
-			//добавить ограничеие на фронт по загрузке видео
-			//расписать READ.me
 			if(this.files.length){
 				let data = new FormData();
 				file.forEach(file=>{
 					data.append('file', file)
 				})
-				this.axios
-					.post(this.$server+'task/'+this.files.length, data,config)
-					.then(res=>{
-						this.$_feeling_index_getVideo(res.data.id)
-					})
+				const res=await this.axios.post(this.$server+'task/'+this.files.length, data,config)
+				this.$_feeling_index_getVideo(res.data.id)
 				this.files=[]
 			}
 		},
-		$_feeling_index_getVideo(id){
-			this.axios
-				.get(this.$server+'task/'+id)
-				.then(res=>{
-					for(let index in res.data.data.array_name){
-						this.arrayFiles.push({
-							name:res.data.data.array_name[index],
-							names:res.data.data.names[index],
-							dateCreate:res.data.data.create,
-							dateReady:res.data.data.dateReady,
-							ready:res.data.data.ready,
-							id:res.data.data._id,
-							text:null,
-							audio:0
-						})
-						this.$_feeling_index_check(res.data.data.array_name[index])
-					}
-					this.openUpload=false
-
+		async $_feeling_index_getVideo(id){
+			const res=this.axios.get(this.$server+'task/'+id)
+			for(let index in res.data.data.array_name){
+				this.arrayFiles.push({
+					name:res.data.data.array_name[index],
+					names:res.data.data.names[index],
+					dateCreate:res.data.data.create,
+					dateReady:res.data.data.dateReady,
+					ready:res.data.data.ready,
+					id:res.data.data._id,
+					text:null,
+					audio:0
 				})
+				this.$_feeling_index_check(res.data.data.array_name[index])
+			}
+			this.openUpload=false
 		},
 		async $_feeling_index_check(name){
 			if(!await this.$_feeling_index_checkProgress(name)){
@@ -151,7 +140,7 @@ export default {
 			}
 		},
 		async $_feeling_index_checkProgress(name){
-			const res= await this.axios.get(this.$server+'video/'+name)
+			const res = await this.axios.get(this.$server+'video/'+name)
 			for(let file of this.arrayFiles){
 				if(file.name===res.data.data.name){
 					file.ready=res.data.data.ready
@@ -301,11 +290,12 @@ export default {
 		top: -7px;
 		right: -8px;
 	}
-	.greBlockTitle span{
+	.greyBlockTitle span{
 		overflow: hidden;
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
 		-webkit-box-orient: vertical;
+		padding: 0 10px;
 	}
 	.greyBlockBody{
 		margin: 15px 0;
