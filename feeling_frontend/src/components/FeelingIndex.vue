@@ -58,20 +58,42 @@
 							b-tab(title="Текст с временными рамками")
 								.bodyModal
 									.contentBody
-										.timeBlock(v-for="item in 5")
-											.time 13:31
-											.text aslkjdlkasjdkaskdaskdalskjdlkasjdlkasld
+										.timeBlock
+											.time 00:05
+											.text цена от соединённых штатов похоже раскололся на два лагеря и все из-за санкции по северному потоку два демократы во главе с байды на выступают против
+										.timeBlock
+											.time 00:10
+											.text жёстких ограничений республиканцы за спора обострились накануне принятия важнейшего документы бюджета
+										.timeBlock
+											.time 00:15
+											.text республиканцы ставят ультиматума ничего не подпишем
+										.timeBlock
+											.time 00:20
+											.text пока не решим вопрос по северному потоку худшем случае они могут добиться закрытия правительства
+										.timeBlock
+											.time 00:25
+											.text так называемого шад дауна им это даже выгодно объясняют политологии все равно в прекращении работы
+										.timeBlock
+											.time 00:30
+											.text правительства избирателя обвинят демократов вместе с байды нам американскому президенту такой вариант естественно не к чему но и накладывать санкции на северный поток
 							b-tab(title="Спикеры")
 								.bodyModal
 									.contentBody
 										.row
-											.col-6.speekerBlock(v-for="item in 10")
+											.col-6.speekerBlock
 												.col-12.row
 													.col-6
 														.blockImg
-															img(src="https://alna.ru/thumbs/650/up/immovables_img/248933/1638462011218.jpg")
+															img(src="../assets/2.jpeg")
 													.col-6
-														.name Имя спикера
+														.name Дмитрий Снесарь
+											.col-6.speekerBlock
+												.col-12.row
+													.col-6
+														.blockImg
+															img(src="../assets/1.jpeg")
+													.col-6
+														.name Кирилл Токарев
 					.footerModal
 						.greyButtonBlock(@click="$_feeling_index_exportJson(selectedFile,1,tabActive)") Выгрузить json
 </template>
