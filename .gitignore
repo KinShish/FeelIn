@@ -4,3 +4,7 @@
 /video-gif/audio/
 /api/audio/
 /api/video/
+/api/node_modules/
+/api/package-lock.json
+/video-gif/png/
+/api/model/

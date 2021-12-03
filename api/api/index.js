@@ -7,13 +7,12 @@ exports.plugin = {
     register: async (server,options) => {
         server.route({
             method: 'GET',
-            path: '/video/{name}',
+            path: '/api/video/{name}',
             config: {
                 async handler(req) {
                     const name=req.params.name;
                     const db = req.mongo.db;
                     const data=await db.collection('video').findOne({name:name})
-                    console.log(data)
                     return {err:false,data}
                 },
                 description: 'Проверка подключения к БД',
@@ -27,7 +26,7 @@ exports.plugin = {
         });
         server.route({
             method: 'GET',
-            path: '/task/{id}',
+            path: '/api/task/{id}',
             config: {
                 async handler(req) {
                     const id=req.params.id;
@@ -48,7 +47,7 @@ exports.plugin = {
         });
         server.route({
             method: 'POST',
-            path: '/task/{num}',
+            path: '/api/task/{num}',
             config: {
                 async handler(req) {
                     const db = req.mongo.db;
@@ -62,11 +61,18 @@ exports.plugin = {
                         fs.mkdirSync(dir,{ recursive: true });
                     }
                     try {
+                        async function createTheFile(file,tempPath) {
+                            return await new Promise(resolve => {
+                                let b = fs.createWriteStream(tempPath);
+                                file.pipe(b);
+                                b.on('finish', resolve);
+                            })
+                        }
                         for(let i in files){
                             name=new Date().getTime()+i+"."+names[i].split(".")[1];
                             array_name.push(name)
                             await db.collection('video').insertOne({name,ready:0,create:new Date(),dateReady:0,audio:0})
-                            files[i].pipe(fs.createWriteStream(dir + "/"+name))
+                            await createTheFile(files[i],dir + "/"+name)
                         }
                         const {insertedId}=await db.collection('task').insertOne({names,array_name,ready:0,create:new Date(),dateReady:0})
                         return {err:false, text:"Файлы загружены",id:insertedId}
@@ -85,8 +91,9 @@ exports.plugin = {
                     output: 'stream',
                     parse: true,
                     allow: 'multipart/form-data',
-                    maxBytes: 1024 * 1024 * 100,
-                    multipart: true
+                    maxBytes: 1024 * 1024 * 1000*8,
+                    multipart: true,
+                    timeout:36000000
                 },
                 tags: ['api'],
                 validate: {

@@ -5,7 +5,21 @@ const {MongoClient} = require('mongodb'),
 	fs = require('fs'),
 	vosk = require('vosk'),
 	{ Readable } = require("stream"),
-	wav = require("wav");
+	wav = require("wav"),
+	natural = require('natural'),
+	tokenizer = new natural.AggressiveTokenizerRu();
+
+const normalize=(text)=>{
+	const textTokenizer=tokenizer.tokenize(text.toLowerCase());
+	const words=textTokenizer.reduce((a,b)=>{
+		if(/^[а-яё\-]+$/.test(b)&&b.length>2){
+			const stem=natural.PorterStemmerRu.stem(b)
+			if(stem&&!a.includes(stem))a.push(stem)
+		}
+		return a
+	},[])
+	return words.join(" ")
+}
 
 createAudio=async (name,cb)=>{
 	const fileDir="video/"
@@ -37,10 +51,18 @@ speechToText=async (name)=>{
 		wfReader.on('format', async ({ audioFormat, sampleRate, channels }) => {
 			const rec = new vosk.Recognizer({model: model, sampleRate: sampleRate});
 			rec.setMaxAlternatives(5);
-			rec.setWords(false);
-			for await (const data of wfReadable) {rec.acceptWaveform(data);
+			rec.setWords(true);
+			const chunks=[];
+			let text=""
+			for await (const data of wfReadable) {
+				const end_of_speech = rec.acceptWaveform(data);
+				if (end_of_speech) {
+					const chunk=rec.result()
+					text+=" "+chunk.alternatives[0].text;
+					chunks.push(chunk.alternatives[0]);
+				}
 			}
-			res(rec.finalResult(rec).alternatives[0].text)
+			res({text,chunks})
 			rec.free();
 		});
 		fs.createReadStream(FILE_NAME, {'highWaterMark': 4096}).pipe(wfReader).on('finish',
@@ -48,7 +70,6 @@ speechToText=async (name)=>{
 				model.free();
 			});
 	})
-
 }
 
 const start=async ()=> {
@@ -58,11 +79,20 @@ const start=async ()=> {
 	for(let f of arrayAudio){
 		await createAudio(f.name,await db.collection('video').update({name:f.name},{$set:{audio:1}}))
 	}
-	const arrayAudioToText=await db.collection('video').find({ready:0}).toArray()
+	const arrayAudioToText=await db.collection('video').find({ready:0,audio:1}).toArray()
 	for(let f of arrayAudioToText){
 		const start=new Date()
-		const text=await speechToText(f.name)
-		await createAudio(f.name,await db.collection('video').update({name:f.name},{$set:{ready:1,text,dateReady:new Date(),time:new Date()-start}}))
+		const res=await speechToText(f.name)
+		await createAudio(f.name,await db.collection('video').update({name:f.name},{
+			$set:{
+				ready:1,
+				text:res.text,
+				chunks:res.chunks,
+				normalize:normalize(res.text),
+				dateReady:new Date(),
+				time:new Date()-start
+			}
+		}))
 	}
 	console.log(new Date())
 	setTimeout(start,10000)
