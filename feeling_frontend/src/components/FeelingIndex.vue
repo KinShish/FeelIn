@@ -12,7 +12,7 @@
 					.iconUpload
 						img(src="../assets/upload.svg")
 					b-progress(:value="progress" :max="100" show-progress animated)
-				b-form-file.d-none(id="uploadFile" v-model="files" @input="$_feeling_index_upload" multiple  accept=".mp4")
+				b-form-file.d-none(id="uploadFile" v-model="files" @input="$_feeling_index_upload" multiple  accept="video/mp4,video/x-m4v,video/*,.flv,.mkv")
 			.blockFinishedFiles(v-else key="2")
 				h2 Список обработанных файлов:
 				.mainBlockFiles
@@ -29,7 +29,7 @@
 							span(v-if="file.ready")
 								.dateBlock Дата преобразования: {{new Date(file.dateCreate).toLocaleDateString()+' в '+new Date(file.dateCreate).toLocaleTimeString()}}
 								.dateBlock
-									span(v-if="file.time") Время преобразования: {{file.time}} секунд
+									span(v-if="file.time") Время преобразования: {{file.time}} минут
 							.dateBlock(v-if="file.audio===0") Идет считывание аудио дорожки...
 							.dateBlock(v-if="!file.ready&&file.audio===1") Идет преобразование аудио в текст...
 				.blockDoMore
@@ -44,7 +44,7 @@
 						.closeModal(@click="openModal=false")
 							b-icon(icon="x")
 						.infoFile Дата преобразования: {{new Date(selectedFile.dateCreate).toLocaleDateString()+' в '+new Date(selectedFile.dateCreate).toLocaleTimeString()}}
-						.infoFile Время преобразования: {{selectedFile.time}} секунд
+						.infoFile Время преобразования: {{$_feeling_index_getTime(1000)}} минут
 					.blockTabs
 						b-tabs(v-model="tabActive")
 							b-tab(title="Распознаный текст")
@@ -60,7 +60,7 @@
 									.contentBody
 										span(v-for="time of selectedFile.chunks")
 											.timeBlock(v-if="time.chunk.text")
-												.time {{(time.chunk.time % 60 > 9) ? Math.floor(time.chunk.time / 60) + ':' + time.chunk.time % 60 : Math.floor(time.chunk.time / 60) + ':' + '0' + time.chunk.time % 60}}
+												.time {{$_feeling_index_getTime(time.chunk.time)}}
 												.text {{time.chunk.text}}
 							//b-tab(title="Спикеры")
 								.bodyModal
@@ -95,10 +95,14 @@ export default {
 			arrayFiles:[],
 			selectedFile:{},
 			arrInterval:[],
-			openUpload:true
+			openUpload:true,
+			version:'1'
 		}
 	},
 	methods:{
+		$_feeling_index_getTime(time){
+			return (time % 60 > 9) ? Math.floor(time / 60) + ':' + Math.floor(time % 60) : Math.floor(time / 60) + ':' + '0' + time % 60
+		},
 		$_feeling_index_look(file){
 			let arr=[]
 			arr=file.chunks.map(item=>{
@@ -129,12 +133,16 @@ export default {
 				file.forEach(file=>{
 					data.append('file', file)
 				})
-				const res=await this.axios.post(this.$server+'task/'+this.files.length, data,config)
-				if(!res.data.err){
-					this.progress=100;
-					this.$_feeling_index_getVideo(res.data.id)
-					this.files=[]
-				}else{
+				try {
+					const res=await this.axios.post(this.$server+'task/'+this.files.length, data,config)
+					if(!res.data.err){
+						this.progress=100;
+						this.$_feeling_index_getVideo(res.data.id)
+						this.files=[]
+					}else{
+						this.progress=0;
+					}
+				} catch (error) {
 					this.progress=0;
 				}
 			}
@@ -177,7 +185,7 @@ export default {
 						localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
 						if(file.ready){
 							file.text=res.data.data.text
-							file.time=res.data.data.time/1000
+							file.time=this.$_feeling_index_getTime(res.data.data.time/1000)
 							file.chunks=res.data.data.chunks
 							file.normalize=res.data.data.normalize
 							return true
@@ -204,13 +212,22 @@ export default {
 		}
 	},
 	async created() {
+		if(localStorage.getItem('newVersion')){
+			if(this.version!==localStorage.getItem('newVersion')){
+				localStorage.clear()
+			}
+		}else{
+			localStorage.clear()
+		}
+		localStorage.setItem('newVersion',this.version)
 		if(localStorage.getItem('savedArrFiles')){
 			this.arrayFiles=await JSON.parse(localStorage.getItem('savedArrFiles'))
-			for(let item of this.arrayFiles){
-				if(!item.ready||item.text===null){
-					await this.$_feeling_index_check(item.name)
-				}
-			}
+			this.arrayFiles[0].text='текст'
+			this.arrayFiles[0].normalize='текст'
+			this.arrayFiles[0].dateReady=new Date().getTime()
+			this.arrayFiles[0].chunks=[{test:{start:30,word:'word'},text:'asdad'}]
+			this.openUpload=false;
+
 		}
 	},
 	watch:{
@@ -386,8 +403,9 @@ export default {
 		border-radius: 5px;
 		padding: 15px 15px 75px 15px;
 		height: 675px;
-		width: 1000px;
+		max-width: 1000px;
 		position: relative;
+		width: 100%;
 	}
 	.modalWatch-enter-active {
 		animation: surfacingBlock .5s ease;
