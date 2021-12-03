@@ -25,7 +25,7 @@
 						.greyBlockBody
 							.title(v-if="file.text!==null") Распознаный текст
 							.greyButtonBlock(@click="$_feeling_index_look(file)" v-if="file.text!==null") Просмотреть
-							.greyButtonBlock(@click="$_feeling_index_exportJson(file,0)" v-if="file.text!==null") Выгрузить json
+							.greyButtonBlock(@click="$_feeling_index_exportJson(file)" v-if="file.text!==null") Выгрузить json
 							span(v-if="file.ready")
 								.dateBlock Дата преобразования: {{new Date(file.dateCreate).toLocaleDateString()+' в '+new Date(file.dateCreate).toLocaleTimeString()}}
 								.dateBlock
@@ -54,29 +54,15 @@
 							b-tab(title="Очищенный текст")
 								.bodyModal
 									.contentBody
-										p {{selectedFile.text}}
+										p {{selectedFile.normalize}}
 							b-tab(title="Текст с временными рамками")
 								.bodyModal
 									.contentBody
-										.timeBlock
-											.time 00:05
-											.text цена от соединённых штатов похоже раскололся на два лагеря и все из-за санкции по северному потоку два демократы во главе с байды на выступают против
-										.timeBlock
-											.time 00:10
-											.text жёстких ограничений республиканцы за спора обострились накануне принятия важнейшего документы бюджета
-										.timeBlock
-											.time 00:15
-											.text республиканцы ставят ультиматума ничего не подпишем
-										.timeBlock
-											.time 00:20
-											.text пока не решим вопрос по северному потоку худшем случае они могут добиться закрытия правительства
-										.timeBlock
-											.time 00:25
-											.text так называемого шад дауна им это даже выгодно объясняют политологии все равно в прекращении работы
-										.timeBlock
-											.time 00:30
-											.text правительства избирателя обвинят демократов вместе с байды нам американскому президенту такой вариант естественно не к чему но и накладывать санкции на северный поток
-							b-tab(title="Спикеры")
+										span(v-for="time of selectedFile.chunks")
+											.timeBlock(v-if="time.chunk.text")
+												.time {{(time.chunk.time % 60 > 9) ? Math.floor(time.chunk.time / 60) + ':' + time.chunk.time % 60 : Math.floor(time.chunk.time / 60) + ':' + '0' + time.chunk.time % 60}}
+												.text {{time.chunk.text}}
+							//b-tab(title="Спикеры")
 								.bodyModal
 									.contentBody
 										.row
@@ -95,7 +81,7 @@
 													.col-6
 														.name Кирилл Токарев
 					.footerModal
-						.greyButtonBlock(@click="$_feeling_index_exportJson(selectedFile,1,tabActive)") Выгрузить json
+						.greyButtonBlock(@click="$_feeling_index_exportJson(selectedFile)") Выгрузить json
 </template>
 
 <script>
@@ -114,6 +100,16 @@ export default {
 	},
 	methods:{
 		$_feeling_index_look(file){
+			let arr=[]
+			arr=file.chunks.map(item=>{
+				return{
+					chunk:{
+						time:Math.floor(item.result!==undefined?item.result[0].start:0),
+						text:item.text
+					}
+				}
+			})
+			file.chunks=arr
 			this.selectedFile=file
 			this.openModal=true
 		},
@@ -134,27 +130,35 @@ export default {
 					data.append('file', file)
 				})
 				const res=await this.axios.post(this.$server+'task/'+this.files.length, data,config)
-				this.progress=100;
-				this.$_feeling_index_getVideo(res.data.id)
-				this.files=[]
+				if(!res.data.err){
+					this.progress=100;
+					this.$_feeling_index_getVideo(res.data.id)
+					this.files=[]
+				}else{
+					this.progress=0;
+				}
 			}
 		},
 		async $_feeling_index_getVideo(id){
 			const res=await this.axios.get(this.$server+'task/'+id)
-			for(let index in res.data.data.array_name){
-				this.arrayFiles.push({
-					name:res.data.data.array_name[index],
-					names:res.data.data.names[index],
-					dateCreate:res.data.data.create,
-					dateReady:res.data.data.dateReady,
-					ready:res.data.data.ready,
-					id:res.data.data._id,
-					text:null,
-					audio:0
-				})
-				this.$_feeling_index_check(res.data.data.array_name[index])
+			if(!res.data.err){
+				for(let index in res.data.data.array_name){
+					this.arrayFiles.push({
+						name:res.data.data.array_name[index],
+						names:res.data.data.names[index],
+						dateCreate:res.data.data.create,
+						dateReady:res.data.data.dateReady,
+						ready:res.data.data.ready,
+						id:res.data.data._id,
+						text:null,
+						chunks:'',
+						normalize:'',
+						audio:0
+					})
+					this.$_feeling_index_check(res.data.data.array_name[index])
+				}
+				this.openUpload=false
 			}
-			this.openUpload=false
 		},
 		async $_feeling_index_check(name){
 			if(!await this.$_feeling_index_checkProgress(name)){
@@ -165,42 +169,35 @@ export default {
 		},
 		async $_feeling_index_checkProgress(name){
 			const res = await this.axios.get(this.$server+'video/'+name)
-			for(let file of this.arrayFiles){
-				if(file.name===res.data.data.name){
-					file.ready=res.data.data.ready
-					file.audio=res.data.data.audio
-					localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
-					if(file.ready){
-						file.text=res.data.data.text
-						file.time=res.data.data.time/1000
-						return true
-					}
-				}
-			}
-			return false
-		},
-		$_feeling_index_exportJson(file,type,tabActive){
-			let myJson={}
-			if(!type){
-				myJson={
-					name:file.names,
-					text:file.text
-				}
-			}else{
-				switch (tabActive){
-					case 0:{
-						myJson={
-							name:file.names,
-							text:file.text
+			if(!res.data.err){
+				for(let file of this.arrayFiles){
+					if(file.name===res.data.data.name){
+						file.ready=res.data.data.ready
+						file.audio=res.data.data.audio
+						localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
+						if(file.ready){
+							file.text=res.data.data.text
+							file.time=res.data.data.time/1000
+							file.chunks=res.data.data.chunks
+							file.normalize=res.data.data.normalize
+							return true
 						}
-						break
 					}
 				}
+				return false
+			}
+		},
+		$_feeling_index_exportJson(file){
+			let myJson={}
+			myJson={
+				name:file.names,
+				text:file.text,
+				chunks:file.chunks
 			}
 			const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myJson));
 			const downloadAnchorNode = document.createElement('a');
 			downloadAnchorNode.setAttribute("href",dataStr);
-			downloadAnchorNode.setAttribute("download", 'test' + ".json");
+			downloadAnchorNode.setAttribute("download", file.names + ".json");
 			document.body.appendChild(downloadAnchorNode);
 			downloadAnchorNode.click();
 			downloadAnchorNode.remove();
