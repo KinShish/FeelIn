@@ -116,7 +116,7 @@ export default {
 			}
 		},
 		async $_feeling_index_getVideo(id){
-			const res=this.axios.get(this.$server+'task/'+id)
+			const res=await this.axios.get(this.$server+'task/'+id)
 			for(let index in res.data.data.array_name){
 				this.arrayFiles.push({
 					name:res.data.data.array_name[index],
