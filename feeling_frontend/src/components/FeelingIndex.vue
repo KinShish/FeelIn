@@ -43,7 +43,7 @@
 			.myModalBlock(v-if="openModal")
 				.backGroundBlock(@click="openModal=false")
 				.myModal
-					.titleModal {{selectedFile.name}}
+					.titleModal {{selectedFile.names}}
 						.closeModal(@click="openModal=false")
 							b-icon(icon="x")
 						.infoFile Дата преобразования: {{new Date(selectedFile.dateCreate).toLocaleDateString()+' в '+new Date(selectedFile.dateCreate).toLocaleTimeString()}}
@@ -406,6 +406,7 @@ export default {
 	.titleModal{
 		font-size: 24px;
 		margin-bottom: 15px;
+		padding-right: 50px;
 	}
 	.closeModal{
 		position: absolute;
