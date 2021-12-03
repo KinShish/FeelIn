@@ -17,13 +17,13 @@
 <br>![текст3](https://user-images.githubusercontent.com/75037261/144616276-7fd95dcf-417d-463f-89a4-db0d675a7e3c.PNG)<br>
 
 # Установка
-BackEnd
-Скопировать репозиторий
-Выполнить
-    cd api
-    npm i
-    node index.js
-Запуститься API и в консоли будет указано к какому IP подулючаться
+BackEnd<br>
+Скопировать репозиторий<br>
+Выполнить<br>
+    cd api<br>
+    npm i<br>
+    node index.js<br>
+Запуститься API и в консоли будет указано к какому IP подулючаться<br>
 
 # Развертывание
 -
