@@ -54,11 +54,13 @@
 							b-tab(title="Очищенный текст")
 								.bodyModal
 									.contentBody
-										p asdjaslkdjlkasjdklasjkdjaskdjlasjdlkasjdlaksjdlkasjdlkasjdjaslkdjaskdalskdjaklsd
+										p {{selectedFile.text}}
 							b-tab(title="Текст с временными рамками")
 								.bodyModal
 									.contentBody
-										p asdjaslkdjlkasjdklasjkdjaskdjlasjdlkasjdlaksjdlkasjdlkasjdjaslkdjaskdalskdjaklsd
+										.timeBlock(v-for="item in 5")
+											.time 13:31
+											.text aslkjdlkasjdkaskdaskdalskjdlkasjdlkasld
 							b-tab(title="Спикеры")
 								.bodyModal
 									.contentBody
@@ -438,5 +440,17 @@ export default {
 	.infoFile{
 		font-size: 16px;
 		text-align: left;
+	}
+	.timeBlock {
+		display: flex;
+		margin-bottom: 15px;
+		border-bottom: 2px solid #017d89;
+	}
+	.timeBlock .time{
+		text-decoration: underline;
+		margin-right: 15px;
+	}
+	.timeBlock .text{
+		overflow-wrap: anywhere;
 	}
 </style>
