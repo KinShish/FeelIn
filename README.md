@@ -11,7 +11,7 @@
 4.Вы можете всегда вернуться к началу,нажав кнопку "Загрузить еще".Также вверху у вас появится кнопка история загрузок, где вы сможете просмотреть все обработанные файлы!
 <br>![текст3](https://user-images.githubusercontent.com/75037261/144616276-7fd95dcf-417d-463f-89a4-db0d675a7e3c.PNG)<br>
 <br>![текст2](https://user-images.githubusercontent.com/75037261/144616874-17604c3f-a3c9-4972-82e1-3449db8bf8bd.PNG)<br>
-
+<br>![text5](https://user-images.githubusercontent.com/75037261/144617407-16260346-8ec2-48e0-92ab-ea92353490e2.PNG)<br>
 
 <br>![текст](https://user-images.githubusercontent.com/75037261/144616612-aa1bb7eb-2812-4edf-8e1a-d9816a34a19c.PNG)<br>
 <br>![текст3](https://user-images.githubusercontent.com/75037261/144616276-7fd95dcf-417d-463f-89a4-db0d675a7e3c.PNG)<br>
