@@ -12,9 +12,6 @@
 					.iconUpload
 						img(src="../assets/upload.svg")
 					b-progress(:value="progress" :max="100" show-progress animated)
-					.additionalSpiner(v-if="openUpload===true&&progress===100")
-						b-spinner
-						.text Идет получение данных
 				b-form-file.d-none(id="uploadFile" v-model="files" @input="$_feeling_index_upload" multiple  accept=".mp4")
 			.blockFinishedFiles(v-else key="2")
 				h2 Список обработанных файлов:
@@ -101,7 +98,9 @@ export default {
 				onUploadProgress: (progressEvent)=> {
 					let count = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
 					this.$nextTick(()=>{
-						this.progress=count
+						if(this.progress<=90){
+							this.progress=count
+						}
 					})
 				}
 			};
@@ -111,6 +110,7 @@ export default {
 					data.append('file', file)
 				})
 				const res=await this.axios.post(this.$server+'task/'+this.files.length, data,config)
+				this.progress=100;
 				this.$_feeling_index_getVideo(res.data.id)
 				this.files=[]
 			}
@@ -338,16 +338,6 @@ export default {
 	.dateBlock{
 		width: 200px;
 		height: 50px;
-	}
-	.additionalSpiner{
-		position: absolute;
-		width: 100%;
-		left: 0;
-		display: grid;
-		place-content: center;
-	}
-	.additionalSpiner .spinner-border{
-		margin: 0 auto;
 	}
 	.backGroundBlock{
 		width: 100%;
