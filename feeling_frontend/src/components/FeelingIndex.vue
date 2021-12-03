@@ -11,6 +11,9 @@
 					.iconUpload
 						img(src="../assets/upload.svg")
 					b-progress(:value="progress" :max="100" show-progress animated)
+					.additionalSpiner(v-if="openUpload===true&&progress===100")
+						b-spinner
+						.text Идет получение данных
 				b-form-file.d-none(id="uploadFile" v-model="files" @input="$_feeling_index_upload" multiple  accept=".mp4")
 			.blockFinishedFiles(v-else key="2")
 				h2 Список обработанных файлов:
@@ -62,9 +65,6 @@ export default {
 					let count = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
 					this.$nextTick(()=>{
 						this.progress=count
-						if(this.progress===100){
-							setTimeout(()=>{this.progress=0;},1000)
-						}
 					})
 				}
 			};
@@ -74,7 +74,7 @@ export default {
 					data.append('file', file)
 				})
 				this.axios
-					.post('http://192.168.4.23:3000/task/'+this.files.length, data,config)
+					.post(this.$server+'task/'+this.files.length, data,config)
 					.then(res=>{
 						this.$_feeling_index_getVideo(res.data.id)
 					})
@@ -83,7 +83,7 @@ export default {
 		},
 		$_feeling_index_getVideo(id){
 			this.axios
-				.get('http://192.168.4.23:3000/task/'+id)
+				.get(this.$server+'task/'+id)
 				.then(res=>{
 					for(let index in res.data.data.array_name){
 						this.arrayFiles.push({
@@ -110,14 +110,14 @@ export default {
 			}
 		},
 		async $_feeling_index_checkProgress(name){
-			const res= await this.axios.get('http://192.168.4.23:3000/video/'+name)
+			const res= await this.axios.get(this.$server+'video/'+name)
 			for(let file of this.arrayFiles){
 				if(file.name===res.data.data.name){
 					file.ready=res.data.data.ready
 					file.audio=res.data.data.audio
+					localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
 					if(file.ready){
 						file.text=res.data.data.text
-						localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
 						return true
 					}
 				}
@@ -148,6 +148,11 @@ export default {
 				}
 			})
 		}
+	},
+	watch:{
+		'openUpload'(){
+			this.progress=0;
+		}
 	}
 }
 </script>
@@ -168,6 +173,7 @@ export default {
 		display: grid;
 		place-content: center;
 		height: 260px;
+		position: relative;
 	}
 	.iconUpload{
 		background: #017D89;
@@ -279,5 +285,15 @@ export default {
 	}
 	.dateBlock{
 		width: 200px;
+	}
+	.additionalSpiner{
+		position: absolute;
+		width: 100%;
+		left: 0;
+		display: grid;
+		place-content: center;
+	}
+	.additionalSpiner .spinner-border{
+		margin: 0 auto;
 	}
 </style>
