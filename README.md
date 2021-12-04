@@ -19,9 +19,16 @@
 ![текст2](https://user-images.githubusercontent.com/75037261/144621660-1ba7a78b-8313-4618-a657-e5587c294073.PNG)
 <br><br>
 # Установка
-BackEnd<br>
-Скопировать репозиторий<br>
-Выполнить<br>
+BackEnd
+
+Скопировать репозиторий
+
+Для работы проекта также нужно скачать модель vosk по ссылке https://alphacephei.com/vosk/models
+
+и разархивировать ее в папку `api/modal`
+
+Выполнить
+
 ```
     cd api<br>
     npm i<br>
