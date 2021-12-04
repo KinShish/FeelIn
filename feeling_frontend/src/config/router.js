@@ -6,13 +6,6 @@ const routes = [
 		components:{
 			default:()=> import('../App'),
 		},
-		children:[
-			{
-				path: 'education',
-				name: 'education',
-				component: () => import('../components/FeelingEducation')
-			}
-		]
 	},
 ]
 

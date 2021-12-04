@@ -27,7 +27,7 @@
 							.greyButtonBlock(@click="$_feeling_index_look(file)" v-if="file.text!==null") Просмотреть
 							.greyButtonBlock(@click="$_feeling_index_exportJson(file)" v-if="file.text!==null") Выгрузить json
 							span(v-if="file.ready")
-								.dateBlock Дата преобразования: {{new Date(file.dateCreate).toLocaleDateString()+' в '+new Date(file.dateCreate).toLocaleTimeString()}}
+								.dateBlock Дата преобразования: {{new Date(file.dateReady).toLocaleDateString()+' в '+new Date(file.dateReady).toLocaleTimeString()}}
 								.dateBlock
 									span(v-if="file.time") Время преобразования: {{file.time}} минут
 							.dateBlock(v-if="file.audio===0") Идет считывание аудио дорожки...
@@ -43,8 +43,8 @@
 					.titleModal {{selectedFile.names}}
 						.closeModal(@click="openModal=false")
 							b-icon(icon="x")
-						.infoFile Дата преобразования: {{new Date(selectedFile.dateCreate).toLocaleDateString()+' в '+new Date(selectedFile.dateCreate).toLocaleTimeString()}}
-						.infoFile Время преобразования: {{$_feeling_index_getTime(1000)}} минут
+						.infoFile Дата преобразования: {{new Date(selectedFile.dateReady).toLocaleDateString()+' в '+new Date(selectedFile.dateReady).toLocaleTimeString()}}
+						.infoFile Время преобразования: {{selectedFile.time}} минут
 					.blockTabs
 						b-tabs(v-model="tabActive")
 							b-tab(title="Распознаный текст")
@@ -58,28 +58,10 @@
 							b-tab(title="Текст с временными рамками")
 								.bodyModal
 									.contentBody
-										span(v-for="time of selectedFile.chunks")
+										span(v-for="time of $_feeling_index_getChanks(selectedFile.chunks)")
 											.timeBlock(v-if="time.chunk.text")
 												.time {{$_feeling_index_getTime(time.chunk.time)}}
 												.text {{time.chunk.text}}
-							//b-tab(title="Спикеры")
-								.bodyModal
-									.contentBody
-										.row
-											.col-6.speekerBlock
-												.col-12.row
-													.col-6
-														.blockImg
-															img(src="../assets/2.jpeg")
-													.col-6
-														.name Дмитрий Снесарь
-											.col-6.speekerBlock
-												.col-12.row
-													.col-6
-														.blockImg
-															img(src="../assets/1.jpeg")
-													.col-6
-														.name Кирилл Токарев
 					.footerModal
 						.greyButtonBlock(@click="$_feeling_index_exportJson(selectedFile)") Выгрузить json
 </template>
@@ -100,12 +82,9 @@ export default {
 		}
 	},
 	methods:{
-		$_feeling_index_getTime(time){
-			return (time % 60 > 9) ? Math.floor(time / 60) + ':' + Math.floor(time % 60) : Math.floor(time / 60) + ':' + '0' + time % 60
-		},
-		$_feeling_index_look(file){
-			let arr=[]
-			arr=file.chunks.map(item=>{
+		$_feeling_index_getChanks(chunksFile){
+			let chunks=[]
+			chunks=chunksFile.map(item=>{
 				return{
 					chunk:{
 						time:Math.floor(item.result!==undefined?item.result[0].start:0),
@@ -113,7 +92,13 @@ export default {
 					}
 				}
 			})
-			file.chunks=arr
+			return chunks
+		},
+		$_feeling_index_getTime(time){
+			return (time % 60 > 9) ? Math.floor(time / 60) + ':' + Math.floor(time % 60) : Math.floor(time / 60) + ':' + '0' + time % 60
+		},
+		$_feeling_index_look(file){
+			this.tabActive=0;
 			this.selectedFile=file
 			this.openModal=true
 		},
@@ -156,7 +141,7 @@ export default {
 						names:res.data.data.names[index],
 						dateCreate:res.data.data.create,
 						dateReady:res.data.data.dateReady,
-						ready:res.data.data.ready,
+						ready:0,
 						id:res.data.data._id,
 						text:null,
 						chunks:'',
@@ -184,6 +169,7 @@ export default {
 						file.audio=res.data.data.audio
 						localStorage.setItem('savedArrFiles',JSON.stringify(this.arrayFiles))
 						if(file.ready){
+							file.dateReady=res.data.data.dateReady
 							file.text=res.data.data.text
 							file.time=this.$_feeling_index_getTime(res.data.data.time/1000)
 							file.chunks=res.data.data.chunks
@@ -222,12 +208,11 @@ export default {
 		localStorage.setItem('newVersion',this.version)
 		if(localStorage.getItem('savedArrFiles')){
 			this.arrayFiles=await JSON.parse(localStorage.getItem('savedArrFiles'))
-			this.arrayFiles[0].text='текст'
-			this.arrayFiles[0].normalize='текст'
-			this.arrayFiles[0].dateReady=new Date().getTime()
-			this.arrayFiles[0].chunks=[{test:{start:30,word:'word'},text:'asdad'}]
-			this.openUpload=false;
-
+			for(let item of this.arrayFiles){
+				if(!item.ready||item.text===null){
+					await this.$_feeling_index_check(item.name)
+				}
+			}
 		}
 	},
 	watch:{

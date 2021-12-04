@@ -1,10 +1,6 @@
 <template lang="pug">
 	div
-		//router-link(to="/education") Обучение
-		FeelingIndex(v-if="$route.name==='index'")
-		transition(name="opacity")
-			keep-alive
-				router-view
+		FeelingIndex
 </template>
 <script>
 	export default {
