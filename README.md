@@ -22,9 +22,9 @@
 BackEnd<br>
 Скопировать репозиторий<br>
 Выполнить<br>
-    «cd api<br>
+    {cd api<br>
     npm i<br>
-    node index.js<br>«
+    node index.js<br>}
 Запуститься API и в консоли будет указано к какому IP подулючаться<br>
 
 # Развертывание
